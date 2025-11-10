@@ -1,0 +1,28 @@
+{
+  "name": "hck-projects",
+  "version": "0.1.0",
+  "description": "Collection of AI, web, and diagnostic projects within HCK_Labs portfolio.",
+  "projects": [
+    {
+      "id": "AI_Project_1-ChatbotFAQ",
+      "title": "Chatbot FAQ",
+      "status": "alpha",
+      "path": "./AI_Project_1-ChatbotFAQ/",
+      "desc": "Simple FAQ chatbot prototype for HuckHub and AI experimentation."
+    },
+    {
+      "id": "AI_Project_2-ChatbotMORELEpl",
+      "title": "Chatbot MORELE.pl (adv)",
+      "status": "planned",
+      "path": "./AI_Project_2-ChatbotMORELEpl adv/",
+      "desc": "Advanced variant focusing on natural language retrieval and calculating rivals technologies."
+    },
+    {
+      "id": "PY_project_1-MY_INTRODUCTIONS",
+      "title": "Python Introductions",
+      "status": "alpha",
+      "path": "./PY_project_1-MY_INTRODUCTIONS/",
+      "desc": "Intro-level Python projects for educational progression."
+    }
+  ]
+}
