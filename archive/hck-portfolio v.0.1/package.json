@@ -1,0 +1,21 @@
+{
+  "name": "hck-portfolio-dev",
+  "version": "1.0.0",
+  "description": "Educational AI portfolio site for HCK_Labs — combining web, AI, and diagnostic tools.",
+  "author": "Marcin Firmuga (HCK)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/HuckleR2003/HCK_Labs/tree/main/hck-portfolio-dev"
+  },
+  "scripts": {
+    "start": "live-server src/public --port=8080 --open=index.html",
+    "build": "echo 'No build step yet — static site.'",
+    "lint": "eslint js/*.js",
+    "deploy": "echo 'Deploy to GitHub Pages or static hosting.'"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "live-server": "^1.2.2"
+  }
+}
