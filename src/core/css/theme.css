@@ -1,0 +1,59 @@
+/* ======================================================
+   THEME.CSS - Core visual DNA for HCK_Labs
+   Defines global colors, fonts, and base layout styling
+   ======================================================
+   HCK_LABS */
+
+@import url('../../assets/fonts/inter.css');
+
+:root{
+  --bg:#04060d;
+  --panel:#0b1220;
+  --muted:#a8b0c0;
+  --accent:#00ffd5;
+  --accent-2:#ff4b4b;
+  --glass: rgba(255,255,255,0.03);
+  --container:1100px;
+  --mono: 'Orbitron', sans-serif;
+  --ui: 'Inter', sans-serif;
+  --radius: 8px;
+}
+
+/* Base resets */
+* { box-sizing: border-box; }
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: #e9eef6;
+  font-family: var(--ui);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* Default link style */
+a {
+  color: var(--accent);
+  text-decoration: none;
+  transition: 0.3s ease;
+}
+a:hover {
+  color: var(--accent-2);
+}
+
+/* Container utility */
+.container {
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Section defaults */
+.section {
+  padding: 90px 20px;
+  position: relative;
+  min-height: 420px;
+  z-index: 10;
+}

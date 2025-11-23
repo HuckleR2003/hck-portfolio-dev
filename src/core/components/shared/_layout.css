@@ -1,0 +1,53 @@
+/* LAYOUT: containers, grids, sections */
+.container {
+  width: 90%;
+  max-width: 1300px;
+  margin: 0 auto;
+}
+
+.section {
+  padding: 120px 0;
+  position: relative;
+}
+
+.grid {
+  display: grid;
+  gap: 20px;
+}
+
+.grid-4 {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.navbar {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(10px);
+  z-index: 999;
+}
+
+.hero-fixed {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 998;
+  transition: opacity 0.4s ease;
+}
+
+.hero-bottom {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.hero-bottom.visible {
+  opacity: 1;
+}
+
+.footer {
+  text-align: center;
+  padding: 80px 0;
+  color: var(--muted);
+}

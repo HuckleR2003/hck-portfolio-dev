@@ -1,0 +1,41 @@
+/* main.css - full working styling for the portfolio */
+/* HCK_Labs
+          
+/* NAV */
+.navbar{
+  position:fixed; top:0; left:0; right:0; height:64px;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 28px; z-index:140;
+  background: linear-gradient(180deg, rgba(4,6,13,0.6), rgba(4,6,13,0.25));
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.logo{ font-family:var(--mono); font-weight:700; letter-spacing:1px; font-size:18px; }
+.logo span{ color:var(--accent); }
+.nav-right a{ margin-left:16px; color:var(--muted); text-decoration:none; font-weight:600; font-size:14px; }
+.nav-right a:hover{ color:var(--accent); }
+
+/* BACKGROUND LAYERS */
+.bg-layer{
+  position:fixed; inset:0; z-index:0;
+  background-position:center; background-size:cover;
+  transition: opacity 900ms ease-in-out, transform 900ms;
+  will-change: opacity, transform;
+  filter: saturate(1.05) contrast(1.02);
+  opacity:0;
+}
+.bg-layer:first-child{ opacity:1; } /* initial */
+
+.bg-overlay{
+  position:fixed; inset:0; z-index:5; pointer-events:none;
+  background: linear-gradient(rgba(0,0,0,0), rgba(0,0,0,0.92));
+  opacity:0; transition: opacity 200ms linear;
+}
+
+.logo-small{ font-family:var(--mono); font-weight:700; font-size:26px; margin-bottom:6px; }
+.hero-title{ font-family:var(--mono); font-size:44px; color:var(--accent); margin:12px 0 6px; transition: opacity 260ms ease, transform 300ms ease; }
+.hero-sub{ color:var(--muted); margin-bottom:12px; transition: opacity 260ms ease, transform 300ms ease; }
+.hero-ctas{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; pointer-events:auto; }
+.btn{ background:var(--accent); color:#001; padding:10px 16px; border-radius:8px; font-weight:700; border:none; cursor:pointer; text-decoration:none; }
+.btn-outline{ background:transparent; border:2px solid rgba(255,255,255,0.06); padding:8px 14px; color:var(--muted); border-radius:8px; cursor:pointer; }
+.btn-ghost{ background:none; border:1px solid rgba(255,255,255,0.04); padding:6px 10px; border-radius:8px; color:var(--muted); }

@@ -1,0 +1,31 @@
+/* small helpers */
+.link{ color:var(--accent); text-decoration:none; margin-right:12px; }
+.tags{ color:var(--muted); font-size:13px; margin-top:8px; }
+
+/* ===== HERO_BOTTOM and HERO_CENTER behavior ===== */
+/* HIDING HERO */
+.hero-fixed.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.8s ease-in-out;
+}
+/* HERO BOTTOM – start & animation */
+.hero-bottom {
+  position: relative;
+  text-align: center;
+  padding: 120px 20px;
+  background: linear-gradient(180deg, rgba(0,0,0,0.4), rgba(0,0,0,0.9));
+  border-top: 1px solid rgba(255,255,255,0.05);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  z-index: 80;
+  opacity: 0;
+  transform: translateY(40px);
+  filter: blur(4px);
+  transition: opacity 1.2s ease, transform 1.2s ease, filter 1.2s ease;
+}
+.hero-bottom.visible {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+}
+

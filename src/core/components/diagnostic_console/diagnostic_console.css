@@ -1,0 +1,37 @@
+/* ======== DIAGNOSTIC CONSOLE ======== */
+/* Terminal-like UI with log feed and system tests */
+/* // HCK_Labs */
+
+.diagnostic-modal {
+  background: var(--panel);
+  padding: 20px;
+  border-radius: var(--radius);
+  color: #fff;
+  font-family: var(--mono);
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+#diag-logs {
+  background: rgba(0,0,0,0.5);
+  padding: 12px;
+  border-radius: var(--radius);
+  height: 260px;
+  overflow-y: auto;
+  white-space: pre-line;
+  font-size: 13px;
+}
+
+#diag-run, #diag-export {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--accent);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+#diag-run:hover, #diag-export:hover {
+  background: rgba(255,255,255,0.1);
+}

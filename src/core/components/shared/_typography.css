@@ -1,0 +1,49 @@
+/* TYPOGRAPHY: text, buttons, and headings */
+h1, h2, h3, h4, h5 {
+  font-family: var(--sans);
+  color: #fff;
+  margin: 0 0 10px;
+}
+
+p {
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.btn {
+  display: inline-block;
+  background: var(--accent);
+  color: #fff;
+  padding: 10px 24px;
+  border-radius: var(--radius);
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn:hover {
+  background: #8fb2ff;
+  transform: translateY(-2px);
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+}
+
+.btn-outline:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.logo {
+  font-family: var(--mono);
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: 1px;
+}
+
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.text-muted { color: var(--muted); }

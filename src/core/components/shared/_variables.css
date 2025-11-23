@@ -1,0 +1,11 @@
+/* VARIABLES: reusable design tokens */
+:root {
+  --accent: #7aa3ff;
+  --bg: #050505;
+  --panel: #0b1121;
+  --radius: 12px;
+  --shadow: 0 0 20px rgba(0,0,0,0.3);
+  --muted: #9ba2b2;
+  --mono: 'JetBrains Mono', monospace;
+  --sans: 'Inter', sans-serif;
+}

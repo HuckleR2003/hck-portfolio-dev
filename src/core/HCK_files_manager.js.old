@@ -1,0 +1,270 @@
+// HCK_files_manager.js
+// File explorer + diagnostic console modules for HCK_Labs demo environment.
+// HCK_Labs
+
+// =========================
+// REAL HCK FILE SYSTEM MAP
+// =========================
+  // Root modal content
+  const modalContent = document.getElementById('modal-content');
+  if (!modalContent) {
+    
+    return;
+  }
+  const modal = modalContent; 
+
+
+const HCK_FS = {
+  "hck-portfolio-dev": {
+    type: "folder",
+    children: {
+      "backend": { type: "folder", children: {} },
+
+      "projects": { type: "folder", children: {} },
+
+      "src": {
+        type: "folder",
+        children: {
+
+          "core": {
+            type: "folder",
+            children: {
+
+              "js": {
+                type: "folder",
+                children: {
+                  "main.js":          { type: "file" },
+                  "main.js.old":      { type: "file" },
+                  "nav_controller.js":{ type: "file" },
+                  "ui_manager.js":    { type: "file" },
+                }
+              },
+
+              "utils": {
+                type: "folder",
+                children: {
+                  "helper.js":        { type: "file" },
+                  "observer_utils.js":{ type: "file" }
+                }
+              },
+
+              "components": {
+                type: "folder",
+                children: {
+                  "diagnostic_console": {
+                    type: "folder",
+                    children: {
+                      "diagnostic_console.js": { type: "file" }
+                    }
+                  }
+                }
+              },
+
+              // root javascript components
+              "HCK_files_manager.js": { type: "file" },
+              "hck_GPT.js":           { type: "file" },
+              "ui_hero.js":           { type: "file" },
+              "ui_modals.js":         { type: "file" },
+              "ui_scroll_overlay.js": { type: "file" },
+
+              // CSS directories
+              "css": {
+                type: "folder",
+                children: {
+                  "main.css":      { type: "file" },
+                  "legacy.css":    { type: "file" },
+                  "animations.css":{ type: "file" },
+                  "theme.css":     { type : "file" }
+                }
+              },
+
+              "components_css": {
+                // we rename logically, because folder = src/core/components/
+                // but inside are CSS of components.
+                type: "folder",
+                children: {
+                  "hck_files_manager.css":   { type: "file" },
+                  "hck_gpt.css":             { type: "file" },
+                  "diagnostic_console.css":  { type: "file" },
+                  "how_it_works.css":        { type: "file" }
+                }
+              }
+            }
+          }
+        }
+      },
+
+      // root-level markdown & metadata
+      "CHANGELOG.md":          { type: "file" },
+      "README.md":             { type: "file" },
+      "how_it_works_cross.txt":{ type: "file" },
+      "index.html":            { type: "file" },
+    }
+  }
+};
+
+// --- Base UI template ---
+export function getFilesUI() {
+  return `
+    <div class="files-modal">
+      <div class="files-header">
+        <div class="files-breadcrumb" id="files-breadcrumb">
+          <span class="crumb root-crumb" data-index="0">hck-portfolio-dev</span>
+          <span id="breadcrumbs-dynamic"></span>
+        </div>
+      </div>
+      <div class="files-body">
+        <div class="files-tree" id="files-tree"></div>
+        <div class="files-preview" id="files-preview">
+          <div id="file-meta"></div>
+          <pre id="file-content">// Select a file to preview its demo content</pre>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+
+// --- Initialize the explorer tree ---
+export function renderFilesManagerOnce() {
+    // Fix: ensure modal-content exists (File Manager works only when modal is open)
+  const modalContent = document.getElementById('modal-content');
+  if (!modalContent) return;
+
+  const modal = modalContent; // alias for cleaner code
+
+   function showFile(pathArr) {
+    const name = pathArr[pathArr.length - 1];
+    const node = nodeAtPath(pathArr);
+    if (!node) return;
+
+    // Update metadata
+    metaEl.innerHTML = `<strong>${name}</strong> — <em>${node.type}</em>`;
+
+    // IMAGE PREVIEW
+    if (name.match(/\.(png|jpg|jpeg|gif)$/i)) {
+
+      const imgPath = `src/core/assets/images/${name}`;
+
+      previewEl.innerHTML = `
+        <img src="${imgPath}" 
+             id="preview-image"
+             style="max-width:100%; border-radius:8px; cursor:pointer"/>
+      `;
+
+      const img = previewEl.querySelector('#preview-image');
+      img.addEventListener("click", () => window.open(img.src, "_blank"));
+      return;
+    }
+
+    // TEXT PREVIEW
+    previewEl.innerHTML = `
+      <pre id="file-content">// Preview: ${name}</pre>
+    `;
+
+    const contentEl = previewEl.querySelector("#file-content");
+    contentEl.textContent = "// (demo) This is a placeholder text for " + name;
+  }
+
+  const treeEl = modal.querySelector('#files-tree');
+  const breadcrumbEl = modal.querySelector('#files-breadcrumb');
+  const metaEl = modal.querySelector('#file-meta');
+  const previewEl = modal.querySelector('#files-preview');
+
+  if (!treeEl) return;
+
+ let curPath = ["hck-portfolio-dev"];
+
+  function nodeAtPath(pathArr) {
+    let node = HCK_FS;
+    for (const seg of pathArr) {
+      if (!node.children || !node.children[seg]) return null;
+      node = node.children[seg];
+    }
+    return node;
+  }
+
+  function renderBreadcrumb() {
+    const parts = curPath;
+    const crumbs = parts.map((p, i) =>
+      i === 0
+        ? `<span class="crumb root-crumb" data-index="${i}">${p}</span>`
+        : `<span class="crumb" data-index="${i}">/${p}</span>`
+    ).join('');
+    breadcrumbEl.innerHTML = `<div class="breadcrumb-wrap">${crumbs} <span class="now-here"> NOW HERE</span></div>`;
+  }
+
+  function renderTree() {
+    const node = nodeAtPath(curPath);
+    if (!node) return;
+    const children = node.children || {};
+    const lines = Object.keys(children).sort((a, b) => {
+      const A = children[a].type, B = children[b].type;
+      if (A === B) return a.localeCompare(b);
+      return A === 'folder' ? -1 : 1;
+    }).map(name => {
+      const ch = children[name];
+      return `<div class="tree-row ${ch.type}" data-name="${name}">${ch.type === 'folder' ? '📁' : '📄'} ${name}</div>`;
+    }).join('');
+    treeEl.innerHTML = lines || '<div style="color:var(--muted)">No files</div>';
+  }
+
+  renderBreadcrumb();
+  renderTree();
+
+  treeEl.addEventListener('click', (e) => {
+    const row = e.target.closest('.tree-row');
+    if (!row) return;
+    const name = row.dataset.name;
+    const node = nodeAtPath([...curPath, name]);
+    if (!node) return;
+    if (node.type === 'folder') {
+      curPath.push(name);
+      renderBreadcrumb();
+      renderTree();
+      previewEl.textContent = '';
+      metaEl.textContent = '';
+    } else {
+      showFile([...curPath, name]);
+    }
+  });
+
+  breadcrumbEl.addEventListener('click', (e) => {
+    const clicked = e.target.closest('.crumb');
+    if (!clicked) return;
+    const idx = parseInt(clicked.dataset.index, 10);
+    curPath = idx === 0 ? [] : curPath.slice(0, idx);
+    renderBreadcrumb();
+    renderTree();
+    previewEl.textContent = '';
+    metaEl.textContent = '';
+  });
+}
+
+// --- Diagnostic console (demo) ---
+export function getDiagUI() {
+  return `
+    <h2>Diagnostic Console</h2>
+    <p class="muted">Run connectivity tests and export reports (demo).</p>
+    <div style="display:flex; gap:8px;">
+      <button id="diag-run" class="btn">Run Full Test</button>
+      <button id="diag-export" class="btn-outline">Export Report</button>
+    </div>
+    <pre id="diag-logs" style="margin-top:12px; background:#071022; padding:10px; border-radius:8px; height:260px; overflow:auto;"></pre>
+  `;
+}
+
+// --- Init Diagnostic Run ---
+export function initDiagnostics() {
+  document.addEventListener('click', (e) => {
+    if (e.target && e.target.id === 'diag-run') {
+      const logs = document.getElementById('diag-logs');
+      if (!logs) return;
+      logs.textContent = '[INFO] Starting diagnostics...\n';
+      setTimeout(() => logs.textContent += '[OK] Static files reachable.\n', 500);
+      setTimeout(() => logs.textContent += '[OK] Mock API ping: 200 OK.\n', 1100);
+      setTimeout(() => logs.textContent += '[WARN] DB connection: demo mode.\n', 1600);
+      setTimeout(() => logs.textContent += '[OK] Completed: 2 OK, 1 WARN.\n', 2100);
+    }
+  });
+}

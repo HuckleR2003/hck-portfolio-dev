@@ -1,0 +1,798 @@
+// js/main.js
+// Main interactivity: 
+// sentinel-driven hero text & bg crossfade,
+// overlay dim,
+// counters,
+// filters, 
+// modals,
+// carousel
+document.addEventListener('DOMContentLoaded', () => {
+  // ------ Elements
+  const sentinels = Array.from(document.querySelectorAll('.sentinel'));
+  const heroTitle = document.getElementById('hero-title');
+  const heroSub = document.getElementById('hero-sub');
+  const bgA = document.getElementById('bg-layer-a');
+  const bgB = document.getElementById('bg-layer-b');
+  const overlay = document.getElementById('bg-overlay');
+  const heroFixed = document.getElementById('hero-fixed');
+
+  let activeBg = bgA;
+  let inactiveBg = bgB;
+
+  // ------ Preload helper
+  function preload(url, cb){
+    const img = new Image();
+    img.src = url;
+    img.onload = cb || function(){};
+  }
+
+  // ------ Crossfade
+  function crossfadeBg(url){
+    preload(url, () => {
+      inactiveBg.style.backgroundImage = `url('${url}')`;
+      inactiveBg.style.transition = 'opacity 900ms ease-in-out';
+      inactiveBg.style.opacity = 1;
+      activeBg.style.opacity = 0;
+      setTimeout(() => {
+        const tmp = activeBg;
+        activeBg = inactiveBg;
+        inactiveBg = tmp;
+        inactiveBg.style.opacity = 0;
+      }, 950);
+    });
+  }
+
+  // Intersection observer to change texts when sentinel >55% visible
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const node = entry.target;
+      const title = node.dataset.title || '';
+      const sub = node.dataset.sub || '';
+      const bg = node.dataset.bg || '';
+
+      // fade out > update > fade in
+      heroTitle.style.opacity = 0;
+      heroSub.style.opacity = 0;
+      setTimeout(() => {
+        heroTitle.textContent = title;
+        heroSub.textContent = sub;
+        heroTitle.style.opacity = 1;
+        heroSub.style.opacity = 1;
+      }, 220);
+
+      if (bg) crossfadeBg(bg);
+    });
+  }, { threshold: 0.55 });
+
+  sentinels.forEach(s => io.observe(s));
+
+  // Scroll-driven overlay & subtle translate for hero
+  function onScroll(){
+    const center = window.innerHeight / 2;
+    let best = null;
+    let bestDist = Infinity;
+    sentinels.forEach(s => {
+      const r = s.getBoundingClientRect();
+      const mid = r.top + r.height/2;
+      const dist = Math.abs(mid - center);
+      if (dist < bestDist){ bestDist = dist; best = { node: s, dist }; }
+    });
+    if (!best) return;
+    const maxDist = window.innerHeight / 2;
+    const progress = 1 - Math.min(bestDist / maxDist, 1); // 0..1
+    // overlay more dark when not centered
+    const overlayOpacity = clamp((1 - progress) * 0.8, 0, 0.9);
+    overlay.style.opacity = overlayOpacity;
+    // hero translate
+    heroTitle.style.transform = `translateY(${(1 - progress) * 18}px)`;
+    heroSub.style.transform = `translateY(${(1 - progress) * 10}px)`;
+    heroTitle.style.opacity = clamp(0.35 + progress, 0, 1);
+    heroSub.style.opacity = clamp(0.2 + progress, 0, 1);
+  }
+  window.addEventListener('scroll', debounce(onScroll, 12));
+  window.addEventListener('resize', debounce(onScroll, 60));
+  onScroll();
+
+  /* ------------------ Counters ------------------ */
+  const counters = Array.from(document.querySelectorAll('.stat-num'));
+  if (counters.length){
+    const cIo = new IntersectionObserver((entries, obs) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting){
+          const el = entry.target;
+          const target = parseInt(el.dataset.target || '0', 10);
+          const dur = 1400;
+          const start = performance.now();
+          (function run(now){
+            const t = Math.min(1, (now - start) / dur);
+            const val = Math.floor(target * easeOutCubic(t));
+            el.textContent = val.toLocaleString();
+            if (t < 1) requestAnimationFrame(run);
+            else obs.unobserve(el);
+          })(start);
+        }
+      });
+    }, { threshold: 0.4 });
+    counters.forEach(c => cIo.observe(c));
+  }
+
+  function easeOutCubic(t){ return 1 - Math.pow(1 - t, 3); }
+
+  /* ------------------ Filters ------------------ */
+  const filters = Array.from(document.querySelectorAll('.filter'));
+  const grid = document.getElementById('projects-grid');
+  if (filters.length && grid){
+    filters.forEach(btn => {
+      btn.addEventListener('click', () => {
+        filters.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const cat = btn.dataset.filter;
+        Array.from(grid.children).forEach(tile => {
+          if (cat === 'all') tile.style.display = '';
+          else {
+            const has = (tile.dataset.cat || '').split(' ').includes(cat);
+            tile.style.display = has ? '' : 'none';
+          }
+        });
+      });
+    });
+  }
+
+  /* ------------------ Carousel (beta) ------------------ */
+  (function initCarousel(){
+    const carousel = document.getElementById('carousel');
+    if (!carousel) return;
+    const track = carousel.querySelector('.carousel-track');
+    const prev = carousel.querySelector('.carousel-nav.prev');
+    const next = carousel.querySelector('.carousel-nav.next');
+    let idx = 0;
+    const cards = Array.from(track.children);
+    function update(){
+      const gap = 18;
+      const cardWidth = cards[0].offsetWidth + gap;
+      const x = - (cardWidth * idx);
+      track.style.transform = `translateX(${x}px)`;
+    }
+    prev.addEventListener('click', ()=> { idx = Math.max(0, idx-1); update(); });
+    next.addEventListener('click', ()=> { idx = Math.min(cards.length-1, idx+1); update(); });
+    window.addEventListener('resize', debounce(update, 60));
+    update();
+  })();
+
+  /* ------------------ Modals & Tools ------------------ */
+  const modalOverlay = document.getElementById('modal-overlay');
+  const modalContent = document.getElementById('modal-content');
+  const modalClose = document.getElementById('modal-close');
+
+  function openModal(html){
+    modalContent.innerHTML = html;
+    modalOverlay.style.display = 'flex';
+    modalOverlay.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeModal(){ modalOverlay.style.display = 'none'; modalOverlay.setAttribute('aria-hidden','true'); modalContent.innerHTML = ''; document.body.style.overflow = ''; }
+
+  document.addEventListener('click', (e) => {
+
+    if (e.target && e.target.classList.contains('file')) {
+      const path = e.target.dataset.path;
+      const preview = document.getElementById('file-preview');
+      if (preview) preview.textContent = `// Demo preview for ${path}\nprint("Hello from ${path}")\n`;
+    }
+    if (e.target && e.target.id === 'diag-run') {
+      const logs = document.getElementById('diag-logs');
+      if (!logs) return;
+      logs.textContent = '[INFO] Starting diagnostics...\n';
+      setTimeout(()=> logs.textContent += '[OK] Static files reachable.\n', 500);
+      setTimeout(()=> logs.textContent += '[OK] Mock API ping: 200 OK.\n', 1100);
+      setTimeout(()=> logs.textContent += '[WARN] DB connection: demo mode.\n', 1600);
+      setTimeout(()=> logs.textContent += '[OK] Completed: 2 OK, 1 WARN.\n', 2100);
+    }
+  });
+
+  function appendChat(el, who, text){
+    const node = document.createElement('div');
+    node.style.marginBottom = '8px';
+    node.innerHTML = `<strong style="color:#8be6d8">${who}:</strong> ${escapeHtml(text)}`;
+    el.appendChild(node);
+  }
+  function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function mockReply(q){
+    q = q.toLowerCase();
+    if (q.includes('minigpt')) return 'miniGPT is a minimal decoder-only model for learning — see README.';
+    if (q.includes('diagn')) return 'Run Diagnostics → Diagnostic Console. In demo, checks are mocked.';
+    return 'Demo agent: for full features, open repos or run local backend.';
+  }
+
+  function getGptUI(){
+  return `
+    <div class="hckgpt-modal">
+      <h2 class="hckgpt-title">hck-GPT <span class="version">alpha</span></h2>
+      <p class="hckgpt-sub">Your local AI companion — exploring HCK_Labs repositories and experiments.</p>
+
+      <div class="hckgpt-chat">
+        <div id="chat-log" class="hckgpt-log"></div>
+        <div class="hckgpt-inputbar">
+          <input id="chat-input" placeholder="Ask about a project, file, or experiment...">
+          <button id="chat-send" class="btn hckgpt-send">Send</button>
+        </div>
+      </div>
+
+      <div class="hckgpt-prompts">
+          <button class="prompt-btn" data-prompt="hck_GPT - Overview">hck_GPT – Overview</button>
+          <button class="prompt-btn" data-prompt="PC_Workman - Milestones">PC_Workman – Milestones</button>
+          <button class="prompt-btn" data-prompt="how_it_works_cross.txt - Explained">how_it_works_cross.txt – Explained</button>
+          <button class="prompt-btn" data-prompt="HuckHub - Store & Services">HuckHub – Store & Services</button>
+      </div>
+
+
+      <div class="hckgpt-download">
+        <button class="download-main">Download hck_GPT</button>
+        <button class="download-sub">– for start experience.</button>
+      </div>
+    </div>
+  `;
+}
+
+// ---------------- HCK Files Manager snapshot (demo) ----------------
+const HCK_FS = {
+  "type": "dir",
+  "children": {
+    "CHANGELOG.md": { "type": "file" },
+    "README.md": { "type": "file" },
+    "assets": {
+      "type": "dir",
+      "children": {
+        "docs": { "type": "dir", "children": {} },
+        "fonts": { "type": "dir", "children": {} },
+        "images": {
+          "type": "dir",
+          "children": {
+            "bg-space-1.jpg": { "type": "file" },
+            "bg-space-2.jpg": { "type": "file" },
+            "bg-space-3.jpg": { "type": "file" },
+            "icon-notepad.png": { "type": "file" }
+          }
+        }
+      }
+    },
+    "backend": {
+      "type": "dir",
+      "children": {
+        "api": { "type": "dir", "children": {} },
+        "db": { "type": "dir", "children": {} }
+      }
+    },
+    "components": {
+      "type": "dir",
+      "children": {
+        "main.css": { "type": "file" }
+      }
+    },
+    "js": {
+      "type": "dir",
+      "children": {
+        "main.js": { "type": "file" },
+        "utils.js": { "type": "file" }
+      }
+    },
+    "old_versions": { "type": "dir", "children": {} },
+    "package.json": { "type": "file" },
+    "projects": {
+      "type": "dir",
+      "children": {
+        "AI_Project_1-ChatbotFAQ": {
+          "type": "dir",
+          "children": {
+            "README.txt.txt": { "type": "file" },
+            "package.json": { "type": "file" },
+            "data": { "type": "dir", "children": {} },
+            "project-data": { "type": "dir", "children": {} }
+          }
+        },
+        "AI_Project_2-ChatbotMORELE.pl adv": {
+          "type": "dir",
+          "children": {
+            "README.txt.txt": { "type": "file" },
+            "package.json": { "type": "file" },
+            "data": { "type": "dir", "children": {} },
+            "project-data": { "type": "dir", "children": {} }
+          }
+        },
+        "PY_Project_1-MY_INTRODUCTIONS": {
+          "type": "dir",
+          "children": {
+            "all_myself_introductions_projects.txt": { "type": "file" },
+            "package.json": { "type": "file" },
+            "data": { "type": "dir", "children": {} },
+            "project-data": { "type": "dir", "children": {} }
+          }
+        },
+        "descriptions_about_projects.txt": { "type": "file" },
+        "package.json": { "type": "file" }
+      }
+    },
+    "src": {
+      "type": "dir",
+      "children": {
+        "public": {
+          "type": "dir",
+          "children": {
+            "favicon.ico": { "type": "file" },
+            "index.html": { "type": "file" }
+          }
+        }
+      }
+    },
+    "tools": {
+      "type": "dir",
+      "children": {
+        "diagnostics": { "type": "dir", "children": {} },
+        "hck_files_manager": { "type": "dir", "children": {} }
+      }
+    }
+  }
+};
+
+function getFilesUI(){
+  return `
+    <div class="files-modal">
+      <div class="files-header">
+        <div class="files-breadcrumb" id="files-breadcrumb">
+          <span class="crumb root-crumb" data-index="0">HCK-PORTFOLIO-DEV</span>
+          <span class="crumb-path">/src/public/</span>
+          <span class="crumb-current">YOU ARE HERE</span>
+        </div>
+      </div>
+
+      <div class="files-body">
+        <div class="files-tree" id="files-tree"></div>
+        <div class="files-preview" id="files-preview">
+          <div id="file-meta"></div>
+          <pre id="file-content">// Select a file to preview its demo content</pre>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+document.addEventListener('click', (e) => {
+  if (e.target.id === 'open-files' || e.target.id === 'tool-files' || e.target.id === 'open-files-bottom') {
+    setTimeout(() => initFilesExplorer(), 100);
+  }
+});
+
+function initFilesExplorer(){
+  const fsRoot = HCK_FS.children;
+  const treeEl = document.getElementById('files-tree');
+  const metaEl = document.getElementById('file-meta');
+  const contentEl = document.getElementById('file-content');
+  const breadcrumbEl = document.getElementById('files-breadcrumb');
+  if (!treeEl) return;
+
+  let currentPath = [];
+
+  function renderFolder(folder){
+    treeEl.innerHTML = '';
+    Object.entries(folder).forEach(([name, node]) => {
+      const el = document.createElement('div');
+      el.className = `tree-row ${node.type}`;
+      el.dataset.name = name;
+      el.textContent = (node.type === 'dir' ? '📁 ' : '📄 ') + name;
+      treeEl.appendChild(el);
+    });
+  }
+
+  function getNodeByPath(path){
+    let node = HCK_FS;
+    for (const part of path){
+      if (node.children && node.children[part]) node = node.children[part];
+      else return null;
+    }
+    return node;
+  }
+
+  function updateBreadcrumb(){
+    const pathStr = currentPath.join('/') || '';
+    breadcrumbEl.innerHTML = `
+      <span class="crumb root-crumb" data-index="0">HCK-PORTFOLIO-DEV</span>
+      <span class="crumb-path">/${pathStr}${pathStr && '/'}</span>
+      <span class="crumb-current">YOU ARE HERE</span>
+    `;
+  }
+
+  function openFolder(name){
+    currentPath.push(name);
+    const node = getNodeByPath(currentPath);
+    if (node && node.children) {
+      renderFolder(node.children);
+      updateBreadcrumb();
+      metaEl.textContent = '';
+      contentEl.textContent = '';
+    }
+  }
+
+  function openFile(name){
+    const path = [...currentPath, name].join('/');
+    metaEl.textContent = `📄 ${path}`;
+    contentEl.textContent = `// Demo preview for: ${path}\nconsole.log("Loaded: ${path}");`;
+  }
+
+  treeEl.addEventListener('click', (ev) => {
+    const target = ev.target.closest('.tree-row');
+    if (!target) return;
+    const name = target.dataset.name;
+    const node = getNodeByPath([...currentPath, name]);
+    if (!node) return;
+    if (node.type === 'dir') openFolder(name);
+    else openFile(name);
+  });
+
+  breadcrumbEl.addEventListener('click', (ev) => {
+    if (ev.target.classList.contains('root-crumb')) {
+      currentPath = [];
+      renderFolder(fsRoot);
+      updateBreadcrumb();
+    }
+  });
+
+  renderFolder(fsRoot);
+  updateBreadcrumb();
+}
+
+/* --------- Files manager client-side renderer (uses HCK_FS) --------- */
+
+function renderFilesManagerOnce() {
+  // called when modal created: attach event handlers and initialize root view
+  const treeEl = document.getElementById('files-tree');
+  const breadcrumbEl = document.getElementById('files-breadcrumb');
+  const previewEl = document.getElementById('file-preview');
+  const metaEl = document.getElementById('file-meta');
+
+  if (!treeEl) return;
+
+  // current path array (relative to root hck-portfolio-dev)
+  let curPath = []; // [] == root
+
+  function nodeAtPath(pathArr) {
+    let node = HCK_FS;
+    for (const seg of pathArr) {
+      if (!node.children || !node.children[seg]) return null;
+      node = node.children[seg];
+    }
+    return node;
+  }
+
+  function renderBreadcrumb() {
+    // gradient breadcrumb: gold project name + white rest
+    const projectName = 'hck-portfolio-dev';
+    const parts = [projectName].concat(curPath);
+    const crumbs = parts.map((p,i) => {
+      if (i===0) return `<span class="crumb root-crumb" data-index="${i}">${p}</span>`;
+      return `<span class="crumb" data-index="${i}">/${p}</span>`;
+    }).join('');
+    breadcrumbEl.innerHTML = `<div class="breadcrumb-wrap">${crumbs} <span class="now-here"> NOW HERE</span></div>`;
+  }
+
+  function renderTree() {
+    const node = nodeAtPath(curPath);
+    if (!node) return;
+    const children = node.children || {};
+    const lines = Object.keys(children).sort((a,b) => {
+      // dirs first
+      const A=children[a].type, B=children[b].type;
+      if (A===B) return a.localeCompare(b);
+      return A==='dir' ? -1:1;
+    }).map(name => {
+      const ch = children[name];
+      if (ch.type === 'dir') {
+        return `<div class="tree-row folder" data-name="${name}">📁 ${name}</div>`;
+      } else {
+        return `<div class="tree-row file" data-name="${name}">📄 ${name}</div>`;
+      }
+    }).join('');
+    treeEl.innerHTML = lines || '<div style="color:var(--muted)">No files</div>';
+  }
+
+  function showFile(pathArr) {
+    const node = nodeAtPath(pathArr);
+    if (!node || node.type !== 'file') return;
+    // For demo: show basic generated preview for certain known files
+    const name = pathArr[pathArr.length-1];
+    metaEl.textContent = `Path: ${['hck-portfolio-dev', ...pathArr].join('/')}`;
+    // Simple preview heuristics
+    if (name.endsWith('.html') || name.endsWith('.htm')) {
+      const content = `<!-- Demo preview for ${name} -->\n<html>\n  <body>\n    <h1>Preview of ${name}</h1>\n  </body>\n</html>`;
+      previewEl.textContent = content;
+    } else if (name.endsWith('.js') || name.endsWith('.py') || name.endsWith('.md') || name.endsWith('.txt') || name.endsWith('.json') || name.endsWith('.css')) {
+      previewEl.textContent = `// Demo preview for ${name}\n// (In real manager this would load and show file contents)\n\n// File: ${name}\n\nfunction example(){\n  console.log("This is a preview of " + "${name}");\n}\n`;
+    } else if (name.match(/\.(png|jpg|jpeg|gif|ico)$/i)) {
+      previewEl.innerHTML = `<img src="src/core/assets/images/${name}" alt="${name}" style="max-width:100%; border-radius:8px"/>`;
+    } else {
+      previewEl.textContent = `Binary / unknown file: ${name}`;
+    }
+  }
+
+  // initial render
+  renderBreadcrumb();
+  renderTree();
+
+  // event delegation for tree clicks
+  treeEl.addEventListener('click', (e) => {
+    const row = e.target.closest('.tree-row');
+    if (!row) return;
+    const name = row.dataset.name;
+    const node = nodeAtPath([...curPath, name]);
+    if (!node) return;
+    if (node.type === 'dir') {
+      curPath.push(name);
+      renderBreadcrumb();
+      renderTree();
+      // clear preview
+      document.getElementById('file-preview').textContent = '';
+      document.getElementById('file-meta').textContent = '';
+    } else {
+      showFile([...curPath, name]);
+    }
+  });
+
+  // breadcrumb click: go to clicked level
+  breadcrumbEl.addEventListener('click', (e) => {
+    const clicked = e.target.closest('.crumb');
+    if (!clicked) return;
+    const idx = parseInt(clicked.dataset.index, 10);
+    // idx 0 is root (project name) -> go to root
+    if (idx === 0) curPath = [];
+    else curPath = curPath.slice(0, idx); // because parts included projectName at 0
+    renderBreadcrumb();
+    renderTree();
+    document.getElementById('file-preview').textContent = '';
+    document.getElementById('file-meta').textContent = '';
+  });
+
+  // refresh button: re-render (in real app would reload FS)
+  const refreshBtn = document.getElementById('files-refresh');
+  if (refreshBtn) refreshBtn.addEventListener('click', () => {
+    renderBreadcrumb();
+    renderTree();
+  });
+}
+
+// hook: when modal opened, initialize manager (modalContent already filled)
+document.addEventListener('click', (e) => {
+  // open modal code elsewhere calls openModal(getFilesUI())
+  // after modal shows, detect and call initializer
+  const id = e.target && e.target.id;
+  if (id === 'open-files' || id === 'open-files-bottom' || id === 'tool-files') {
+    // slight delay to let DOM insert modal content
+    setTimeout(() => renderFilesManagerOnce(), 80);
+  }
+});
+
+
+  function getDiagUI(){
+    return `
+      <h2>Diagnostic Console</h2>
+      <p class="muted">Run connectivity tests and export reports (demo).</p>
+      <div style="display:flex; gap:8px;">
+        <button id="diag-run" class="btn">Run Full Test</button>
+        <button id="diag-export" class="btn-outline">Export Report</button>
+      </div>
+      <pre id="diag-logs" style="margin-top:12px; background:#071022; padding:10px; border-radius:8px; height:260px; overflow:auto;"></pre>
+    `;
+  }
+
+  /* ------------------ Contact form demo ------------------ */
+  const contactForm = document.getElementById('contact-form');
+  if (contactForm){
+    contactForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = contactForm.name.value || 'Friend';
+      alert(`Thanks ${name}! Message received (demo).`);
+      contactForm.reset();
+    });
+  }
+
+/* ======= HERO behavior (final stable version (oh god)) ======= */
+(function setupHeroVisibility() {
+  const heroMain = document.getElementById("hero-fixed");
+  const heroBottom = document.getElementById("hero-bottom");
+  const highlightsSection = document.getElementById("highlights"); // STATS
+  const projectsSection = document.getElementById("projects");
+  const toolsSection = document.getElementById("tools");
+  const notesSection = document.getElementById("notes");
+
+  if (!heroMain) return;
+
+  let heroHidden = false;
+
+  // Obserwator sekcji STATS
+  const statsObserver = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        // Gdy STATS wchodzi w ekran — chowamy HERO
+        if (entry.isIntersecting) {
+          heroMain.classList.add("hidden");
+          heroHidden = true;
+        } else {
+          // Pokaż HERO tylko jeśli wychodzimy z STATS w górę (nie w dół)
+          const rect = highlightsSection.getBoundingClientRect();
+          if (rect.top > 0 && heroHidden) {
+            heroMain.classList.remove("hidden");
+            heroHidden = false;
+          }
+        }
+      });
+    },
+    { threshold: 0.25 }
+  );
+  statsObserver.observe(highlightsSection);
+
+  // Ukrywanie HERO przy wejściu w Projects lub Tools
+  [projectsSection, toolsSection].forEach((section) => {
+    if (!section) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) heroMain.classList.add("hidden");
+        });
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(section);
+  });
+
+  // Osobny obserwator dla dolnego HERO (Notes)
+  if (notesSection && heroBottom) {
+    const bottomObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setTimeout(() => heroBottom.classList.add("visible"), 150);
+          } else {
+            heroBottom.classList.remove("visible");
+          }
+        });
+      },
+      { threshold: 0.2 }
+    );
+    bottomObserver.observe(notesSection);
+  }
+})();
+
+// Dodatkowo: nasłuch scrolla, by płynnie reagować przy szybkim przewijaniu
+window.addEventListener('scroll', () => {
+  const highlightsRect = highlightsSection.getBoundingClientRect();
+  const aboveStats = highlightsRect.top > window.innerHeight * 0.5;
+
+  // Gdy jesteśmy z powrotem powyżej STATS → pokaż HERO z powrotem
+  if (aboveStats) {
+    heroMain.classList.remove('hidden');
+  }
+});
+
+    /* ------------------ BUTTONS - OPEN MODALS ------------------ */
+  const openGptButtons = document.querySelectorAll('#open-gpt, #open-gpt-bottom, #tool-gpt');
+  const openFilesButtons = document.querySelectorAll('#open-files, #open-files-bottom, #tool-files');
+  const openDiagButtons = document.querySelectorAll('#open-diag, #open-diag-bottom, #tool-diag');
+
+  openGptButtons.forEach(btn => btn.addEventListener('click', () => {
+    openModal(getGptUI());
+  }));
+
+  openFilesButtons.forEach(btn => btn.addEventListener('click', () => {
+    openModal(getFilesUI());
+  }));
+
+  openDiagButtons.forEach(btn => btn.addEventListener('click', () => {
+    openModal(getDiagUI());
+  }));
+
+  // Close modal
+  modalClose.addEventListener('click', closeModal);
+  modalOverlay.addEventListener('click', (e) => {
+    if (e.target === modalOverlay) closeModal();
+  });
+  
+/* ------------------ HCK-GPT Chat & Prompts ------------------ */
+
+// Obsługa kliknięć promptów (4 przyciski)
+document.addEventListener('click', async (e) => {
+  if (e.target.classList.contains('prompt-btn')) {
+    const prompt = e.target.dataset.prompt;
+    const log = document.getElementById('chat-log');
+    if (!log) return;
+    const response = getProjectResponse(prompt);
+    await typeChat(log, 'You', prompt);
+    await typeChat(log, 'hck-GPT', response, true);
+    log.scrollTop = log.scrollHeight;
+  }
+});
+
+// Obsługa przycisku "Send"
+document.addEventListener('click', async (e) => {
+  if (e.target.id === 'chat-send') {
+    const input = document.getElementById('chat-input');
+    const log = document.getElementById('chat-log');
+    if (!input || !log) return;
+    const msg = input.value.trim();
+    if (!msg) return;
+    input.value = '';
+    await typeChat(log, 'You', msg);
+    const reply = getProjectResponse(msg);
+    await typeChat(log, 'hck-GPT', reply, true);
+    log.scrollTop = log.scrollHeight;
+  }
+});
+
+/* TYPE/WRITING - ANIMATION */
+function typeChat(container, who, text, addDemoNote = false) {
+  return new Promise((resolve) => {
+    // Usuń wcześniejszy kursor
+    const prevCursor = container.querySelector('.typing');
+    if (prevCursor) prevCursor.classList.remove('typing');
+
+    // Utwórz nową linię czatu
+    const line = document.createElement('div');
+    line.innerHTML = `<strong style="color:#8be6d8">${who}:</strong> <span class="msg typing"></span>`;
+    container.appendChild(line);
+
+    const span = line.querySelector('.msg');
+    let i = 0;
+    const speed = 25 + Math.random() * 10;
+
+    function typeNext() {
+      span.textContent = text.slice(0, i++);
+      if (i <= text.length) {
+        setTimeout(typeNext, speed);
+      } else {
+        // Upewnij się, że tylko ostatnia linia ma klasę .typing
+        container.querySelectorAll('.msg').forEach(el => el.classList.remove('typing'));
+        span.classList.add('typing');
+
+        if (addDemoNote) {
+          const note = document.createElement('div');
+          note.classList.add('demo-note');
+          note.innerHTML = '<em>Demo agent – response</em>';
+          note.style.color = '#7aa3ff';
+          note.style.marginTop = '4px';
+          container.appendChild(note);
+        }
+        resolve();
+      }
+      container.scrollTop = container.scrollHeight;
+    }
+
+    typeNext();
+  });
+}
+
+/* Odpowiedzi promptów */
+function getProjectResponse(prompt) {
+  const p = prompt.toLowerCase();
+
+  if (p.includes('overview') || p.includes('hck_gpt'))
+    return `hck-GPT is an experimental local assistant created to analyze your projects inside the portfolio. It integrates lightweight context handling and structured responses for diagnostics and documentation. Furthermore, hck GPT will support larger projects like PC_Workman, calculating and displaying useful data about processes, the computer's status, and the use of its components. It will also indicate whether a component is performing significantly poorly compared to other components.`;
+
+  if (p.includes('pc_workman') || p.includes('milestones'))
+    return `PC_Workman-HCK monitors processes, detects anomalies, and maps hardware performance trends. Future builds will include mini-antivirus logic and adaptive suggestions via hck-GPT.`;
+
+  if (p.includes('how_it_works'))
+    return `how_it_works_cross.txt documents every module across repositories. It describes dependencies, function roles, and file connections — acting as an educational layer for understanding HCK_Labs architecture.`;
+
+  if (p.includes('huckhub'))
+    return `HuckHub connects AI tools with real e-commerce systems. It powers product recommendation, trend prediction, and conversational support — fusing research with business integration.`;
+
+  if (p.includes('diagnostic') || p.includes('console'))
+    return `Diagnostic Console runs system checks and logs connection results for internal modules. In demo mode, it simulates API and DB responses.`;
+
+  return `This prompt is not yet configured in demo mode.`;
+}
+
+  /* ------------------ Utility functions ------------------ */
+  function debounce(fn, wait=80){ return window.debounce ? window.debounce(fn, wait) : (function(){ let t; return (...a)=>{ clearTimeout(t); t = setTimeout(()=> fn(...a), wait); }; })(); }
+  function clamp(v,a=0,b=1){ return window.clamp ? window.clamp(v,a,b) : Math.max(a, Math.min(b, v)); }
+});
+
+// HCK!

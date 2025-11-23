@@ -1,0 +1,109 @@
+──────────────────────────────────────────────
+📁 HOW_IT_WORKS_CROSS.TXT
+──────────────────────────────────────────────
+HCK_LABS | CORE ARCHITECTURE OVERVIEW
+──────────────────────────────────────────────
+
+Strona, grafika, wizualizacje oraz wszystkie interaktywne funkcje systemu -
+	 w tym hck_GPT AI, HCK_Files Manager i Diagnostic Console -
+	 są zbudowane na bazie trzech głównych warstw:	___________________________
+							HTML, CSS i JavaScript (JS).
+
+─────────────────────────────
+🔸 HTML
+─────────────────────────────
+Struktura strony oraz sekcje wizualne, czyli układ hero, statystyki, projekty, narzędzia i stopka.
+Każda z sekcji została zaprojektowana z myślą o modularności – gotowa do podłączenia osobnych komponentów.
+Główne pliki:
+• index.html → struktura główna strony
+• komponenty dynamiczne wczytywane przez JavaScript (np. GPT modal, File Manager, Console)
+
+─────────────────────────────
+🔸 CSS
+─────────────────────────────
+Stylizacja i motyw wizualny projektu – spójny dark interface.
+Zawiera tła parallax, kolorystykę kategorii, interaktywne przejścia oraz animacje fade.
+Główne pliki:
+• src/core/css/main.css
+• theme.css, animations.css (w planie)
+
+─────────────────────────────
+🔸 JAVASCRIPT (JS)
+─────────────────────────────
+Logika całego frameworka HCK_Labs została rozbita na osiem głównych plików.
+Każdy z nich odpowiada za konkretną część funkcjonalną systemu.
+
+📁 /src/core/js/main.js
+» Główne centrum inicjalizacji.
+» Importuje wszystkie moduły i uruchamia je po załadowaniu DOM.
+» Dba o to, by każdy moduł został zainicjowany w odpowiedniej kolejności.
+» W konsoli: „HCK_Labs initialization sequence started...”
+
+📁 /src/core/ui_scroll_overlay.js
+» Odpowiada za hero-section i dynamiczne przejścia między sekcjami.
+» Obsługuje efekt parallax i crossfade tła (dwa warstwy – bgA/bgB).
+» Wygasza/rozjaśnia overlay podczas scrollowania i animuje tekst hero.
+
+📁 /src/core/ui_hero.js
+» Steruje widocznością głównego hero w zależności od sekcji (Stats, Projects, Tools, Notes).
+» Reaguje na IntersectionObserver i dodaje klasy .hidden / .visible.
+» Zapewnia płynne pojawianie się dolnego hero („hero-bottom”).
+
+📁 /src/core/ui_modals.js
+» Logika okna modalnego.
+» Zawiera funkcje openModal(html), closeModal() oraz obsługę kliknięcia poza modalem.
+» Każde narzędzie (GPT, Files, Diagnostics) uruchamiane jest przez openModal().
+
+📁 /src/core/js/ui_manager.js
+» Łączy przyciski interfejsu z modalami.
+» Odpowiada za zdarzenia kliknięcia: 
+  – open-gpt → uruchamia interfejs hck_GPT,
+  – open-files → ładuje HCK_Files Manager,
+  – open-diag → otwiera Diagnostic Console.
+» Działa w ścisłej współpracy z ui_modals.js.
+
+📁 /src/core/HCK_gpt.js
+» Odpowiada za interfejs i logikę hck_GPT.
+» Zawiera generowanie UI (getGptUI), animację pisania (typeChat), oraz funkcje lokalnych odpowiedzi (getProjectResponse).
+» Każda wiadomość użytkownika generuje symulowaną odpowiedź AI w stylu lokalnego agenta.
+» Inicjalizacja: initGPT()
+
+📁 /src/core/HCK_files_manager.js
+» System plików i diagnostyki projektu.
+» Umożliwia przeglądanie struktury katalogów HCK_Labs (symulowane drzewo HCK_FS).
+» Zawiera podgląd plików, breadcrumbs i dynamiczne renderowanie zawartości.
+» Moduł zawiera też Diagnostic Console (getDiagUI) – log systemowych testów.
+» Inicjalizacja: renderFilesManagerOnce(), initDiagnostics().
+
+📁 /src/core/js/nav_controller.js
+» Moduł kontrolny interfejsu – filtracja projektów, zmiana kategorii.
+» Obecnie odpowiada za sortowanie/wyświetlanie projektów i przyszłe funkcje nawigacji.
+» Eksportuje initNavigation(), aby zachować pełną spójność systemową.
+
+─────────────────────────────
+🔹 POWIĄZANIA
+─────────────────────────────
+• Wszystkie moduły JS są importowane przez główny plik main.js.
+• main.js działa jako launcher:
+  → initScrollOverlay()        # hero animacje
+  → initHeroVisibility()       # kontrola hero
+  → initModalEvents()          # modal system
+  → initUIManager()            # powiązania przycisków
+  → initGPT(), renderFilesManagerOnce(), initDiagnostics()
+  → initNavigation()
+
+─────────────────────────────
+🔹 PRZEPŁYW LOGIKI
+─────────────────────────────
+1. index.html ładuje:
+   <script type="module" src="src/core/js/main.js"></script>
+2. main.js importuje i uruchamia moduły JS.
+3. Moduły reagują na scroll, kliknięcia i zdarzenia DOM.
+4. Każda interaktywna funkcja działa niezależnie (np. hck_GPT może być otwarty bez wpływu na resztę strony).
+5. System logów w konsoli (🧠, 🎨, 🪟, 🧩, 🤖) pozwala śledzić inicjalizację.
+
+─────────────────────────────
+🧠 Podsumowanie
+─────────────────────────────
+Cała strona HCK_Labs to samodzielny, edukacyjno-inżynieryjny framework pokazujący modularność w praktyce.
+Każdy komponent – od animacji, przez AI-asystenta, po menedżera plików – działa jako niezależny moduł, który może być rozbudowywany lub podmieniany bez wpływu na resztę systemu.

@@ -1,0 +1,72 @@
+/* ======== HCK FILES MANAGER ======== */
+/* File tree explorer, breadcrumbs and preview panel */
+/* HCK_Labs */
+
+.files-modal {
+  background: var(--panel);
+  padding: 24px;
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.files-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.files-breadcrumb {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.crumb {
+  cursor: pointer;
+  color: var(--accent);
+  margin-right: 4px;
+}
+
+.files-body {
+  display: flex;
+  gap: 16px;
+}
+
+.files-tree {
+  flex: 0 0 35%;
+  background: rgba(255,255,255,0.03);
+  padding: 12px;
+  border-radius: var(--radius);
+  max-height: 400px;
+  overflow-y: auto;
+  font-family: var(--mono);
+}
+
+.tree-row {
+  padding: 4px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.tree-row:hover {
+  background: rgba(255,255,255,0.05);
+}
+
+.files-preview {
+  flex: 1;
+  background: rgba(255,255,255,0.02);
+  border-radius: var(--radius);
+  padding: 12px;
+  font-family: var(--mono);
+  overflow-y: auto;
+}
+
+.files-preview img {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  border-radius: var(--radius);
+  box-shadow: 0 0 12px rgba(0,0,0,0.4);
+}
